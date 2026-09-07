@@ -89,16 +89,8 @@ namespace HTFDrone
 
         [HarmonyPatch(typeof(ItemPurchasable), nameof(ItemPurchasable.Hover))]
         [HarmonyPostfix]
-        private static void MarkDroneStandHoverEnd(ItemPurchasable __instance)
+        private static void MarkDroneStandHoverEnd()
         {
-            // ItemPurchasable.Hover rebuilds _customCost from the payload item's own Cost on
-            // every single hover frame, which silently undid the drone price set when the stand
-            // was cloned - the stand looked right but charged (and gated affordability on) the
-            // price of a stick of TNT. Reapply it after the game has had its say.
-            if (DroneShop.IsHoveringDroneStand)
-            {
-                DroneShop.ApplyDronePrice(__instance);
-            }
             DroneShop.IsHoveringDroneStand = false;
         }
 

@@ -21,10 +21,11 @@ namespace HTFDrone.Drone
         public static bool InfiniteFlight;
         public static bool ExplodeOnImpact = true;
 
-        // What a drone costs from the shop stand added to each island. Set on the cloned stand
-        // rather than on the item prefab - the payload is a stock game item, and editing its Cost
-        // would reprice every one of them in the world.
-        public static int DronePrice = 250;
+        // A drone costs whatever its payload costs - it IS a stick of TNT, just thrown by a
+        // different mechanism, so charging a premium for the same item read as a bug. The stand
+        // is left to price itself from the payload item (ItemPurchasable.Hover rebuilds its cost
+        // from Item.Cost every frame), which also means the drone tracks the payload's price
+        // automatically if PayloadItemName is pointed at something else.
 
         // What a drone calls itself in your hands, on hover and on the shop stand. The payload is
         // a stock game item, so this is applied by patching Item.GetName for tagged instances

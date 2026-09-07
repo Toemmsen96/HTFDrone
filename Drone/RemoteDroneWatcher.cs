@@ -60,7 +60,7 @@ namespace HTFDrone.Drone
                 _airborneSince.Remove(item);
                 if ((bool)item)
                 {
-                    HeldDroneModel.Remove(item);
+                    Undress(item);
                 }
             }
 
@@ -79,8 +79,53 @@ namespace HTFDrone.Drone
 
                 if (Time.time - since >= FlightTimeBeforeDressing)
                 {
-                    HeldDroneModel.Apply(item);
+                    Dress(item);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Dresses a remote drone in the full-size flying airframe - the same DroneModel the
+        /// pilot's own craft uses, not the smaller HeldDroneModel meant for a drone in the hand.
+        /// A remote drone is in flight, so it should read at the same size and prop speed as one
+        /// flown locally; dressing it as a carried drone made it a half-size craft idling its
+        /// props while tearing past.
+        /// </summary>
+        private static void Dress(Item item)
+        {
+            if (!item || (bool)item.GetComponent<DroneModel>())
+            {
+                return;
+            }
+
+            // Snapshot the payload's own renderers before the airframe exists, so the mount slings
+            // the TNT rather than the drone parts we're about to add.
+            Renderer[] payloadRenderers = item.GetComponentsInChildren<Renderer>(includeInactive: true);
+
+            DroneModel.Attach(item.gameObject);
+            PayloadMount.Attach(item, payloadRenderers);
+        }
+
+        /// <summary>Strips the airframe back off when an item stops being a flying remote drone.</summary>
+        private static void Undress(Item item)
+        {
+            if (!item)
+            {
+                return;
+            }
+
+            PayloadMount mount = item.GetComponent<PayloadMount>();
+            if ((bool)mount)
+            {
+                // Put the borrowed TNT meshes back before the frame they hang under goes away.
+                mount.Unmount();
+                Destroy(mount);
+            }
+
+            DroneModel model = item.GetComponent<DroneModel>();
+            if ((bool)model)
+            {
+                Destroy(model);
             }
         }
 
@@ -111,7 +156,14 @@ namespace HTFDrone.Drone
             }
 
             // Airborne and moving, rather than sat on the ground where a dropped TNT would be.
-            return (bool)item.Rig && item.Rig.linearVelocity.sqrMagnitude > 4f;
+            //
+            // Read from FakeVelocity, NOT Rig.linearVelocity. An item simulated by someone else
+            // is kinematic here and RigidbodySync.FixedUpdate calls ZeroVelocity() on it every
+            // tick - its rigidbody velocity is always zero no matter how fast it's actually
+            // travelling, because the motion arrives as transform writes from the network rather
+            // than as physics. FakeVelocity is the game's own reconstruction of speed from those
+            // transform deltas, which is the only meaningful speed a remote item has.
+            return sync.FakeVelocity.sqrMagnitude > 4f;
         }
     }
 }

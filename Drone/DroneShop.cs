@@ -24,8 +24,6 @@ namespace HTFDrone.Drone
 
         private static readonly FieldInfo ItemToPurchaseField =
             AccessTools.Field(typeof(ItemPurchasable), "_itemToPurchase");
-        private static readonly FieldInfo CustomCostField =
-            AccessTools.Field(typeof(Purchasable), "_customCost");
         private static readonly FieldInfo ModelsToOutlineField =
             AccessTools.Field(typeof(Interactable), "_modelsToOutline");
 
@@ -129,19 +127,6 @@ namespace HTFDrone.Drone
             return text.Replace(payloadName, DroneState.DroneItemName);
         }
 
-        /// <summary>
-        /// Forces the drone price onto a stand. ItemPurchasable.Hover recomputes _customCost from
-        /// the payload item's Cost every hover frame, so setting it once at clone time isn't
-        /// enough - without this the stand quietly charges the payload's price instead.
-        /// </summary>
-        public static void ApplyDronePrice(ItemPurchasable stand)
-        {
-            if ((bool)stand)
-            {
-                CustomCostField?.SetValue(stand, DroneState.DronePrice);
-            }
-        }
-
         /// <summary>Called when a drone stand is interacted with, just before the server spawns the item.</summary>
         public static void NotePendingPurchase(byte itemId)
         {
@@ -222,8 +207,9 @@ namespace HTFDrone.Drone
                 template.transform.parent);
             clone.name = "DronePurchasable";
 
+            // No cost override: the stand prices itself from the payload item, so a drone costs
+            // exactly what the TNT it's built from costs.
             ItemToPurchaseField?.SetValue(clone, payload);
-            CustomCostField?.SetValue(clone, DroneState.DronePrice);
             DressStandAsDrone(clone);
 
             Plugin.logger.LogInfo("Added drone stand next to " + template.name);
