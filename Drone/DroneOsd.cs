@@ -56,7 +56,10 @@ namespace HTFDrone.Drone
 
             UpdateFakeBattery(speed);
 
-            DrawArtificialHorizon(pitchDeg, rollDeg);
+            // The lens is angled up by CameraUpTilt, so the real horizon in the video sits that
+            // much lower in frame than the drone's own pitch implies. Subtract it, or the drawn
+            // horizon floats above the one you can see.
+            DrawArtificialHorizon(pitchDeg - DroneState.CameraUpTilt, rollDeg);
             DrawCrosshair();
             DrawHomeArrowAndDistance(droneTransform);
             DrawTopLeftLinkStats();

@@ -63,12 +63,19 @@ namespace HTFDrone.Drone
         // Only one drone in flight at a time to keep things simple.
         public static bool DroneInFlight;
 
-        // Where the FPV camera is mounted on the drone frame, in the craft's local space. The
-        // frame DroneModel builds is ~0.3m long, so ~0.3m forward puts the lens just ahead of the
-        // props like a real cam pod. Tune live with /dronecam if the view clips into geometry
-        // (raise it) or feels like it's flying ahead of the craft (lower it).
-        public static float CameraForwardMargin = 0.32f;
-        public static float CameraHeightOffset = 0.05f;
+        // Where the FPV camera is mounted on the drone frame, in the craft's local space. This
+        // sits on the camera pod DroneModel builds at z=0.14, i.e. *behind* the front props
+        // (whose hubs are at z=0.196) and below the prop disc, which is exactly why a real FPV
+        // feed has prop tips flicking through the top corners - mount it out past the nose and
+        // the whole airframe disappears behind the lens. Tune live with /dronecam if the view
+        // clips into geometry (raise it) or you want the props further out of frame (raise the
+        // forward margin).
+        public static float CameraForwardMargin = 0.14f;
+        public static float CameraHeightOffset = 0.035f;
+
+        // Uptilt, degrees. Real FPV cams are angled up so the horizon sits low when the quad
+        // pitches forward to fly fast; it also drops the prop line into the top of the frame.
+        public static float CameraUpTilt = 20f;
 
         // FPV cams run wide - this is what gives that fisheye, everything-rushing-past feel.
         public static float CameraFov = 105f;

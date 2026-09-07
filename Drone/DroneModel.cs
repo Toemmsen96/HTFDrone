@@ -10,12 +10,18 @@ namespace HTFDrone.Drone
     /// of runtime materials, which keeps the mod a single self-contained DLL.
     ///
     /// It also defines where the "nose" is: DroneState.CameraForwardMargin is measured from this
-    /// frame, so the FPV camera can sit out front of the props like a real cam mount.
+    /// frame, and is set to land on the camera pod built below - behind and under the prop disc,
+    /// so the pilot sees prop tips sweeping the top of frame like a real FPV feed.
     /// </summary>
     internal class DroneModel : MonoBehaviour
     {
         private const float ArmLength = 0.28f;
         private const float PropRadius = 0.16f;
+
+        // How far above the frame the prop disc sits. It has to clear the camera pod (which tops
+        // out around y=0.07) or the front props would be hidden behind it from the lens's own
+        // position - the whole point being that the pilot sees them sweeping the top of frame.
+        private const float PropHeight = 0.075f;
 
         private Transform _frameRoot;
         private Transform[] _props;
@@ -107,9 +113,23 @@ namespace HTFDrone.Drone
                     motor.localPosition = armEnd + Vector3.up * 0.02f;
                     motor.localScale = new Vector3(0.05f, 0.025f, 0.05f);
 
-                    Transform prop = CreatePrimitive(PrimitiveType.Cube, root, "Prop", propMat);
-                    prop.localPosition = armEnd + Vector3.up * 0.05f;
-                    prop.localScale = new Vector3(PropRadius * 2f, 0.006f, 0.022f);
+                    // The prop is a hub with two crossed blades rather than one bar. A single
+                    // bar spinning at 2400 deg/s is edge-on to the FPV lens half the time and
+                    // strobes against the frame rate; a cross keeps something in frame at every
+                    // rotation angle, which is what makes it read as a blurred disc.
+                    Transform prop = new GameObject("Prop").transform;
+                    prop.SetParent(root, worldPositionStays: false);
+                    prop.localPosition = armEnd + Vector3.up * PropHeight;
+                    prop.localRotation = Quaternion.identity;
+
+                    for (int blade = 0; blade < 2; blade++)
+                    {
+                        Transform bladeT = CreatePrimitive(PrimitiveType.Cube, prop, "Blade", propMat);
+                        bladeT.localPosition = Vector3.zero;
+                        bladeT.localRotation = Quaternion.Euler(0f, blade * 90f, 0f);
+                        bladeT.localScale = new Vector3(PropRadius * 2f, 0.006f, 0.022f);
+                    }
+
                     props[propIndex++] = prop;
                 }
             }

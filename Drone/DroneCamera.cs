@@ -45,7 +45,9 @@ namespace HTFDrone.Drone
             }
             // CopyFrom brings the player camera's near plane with it, which is tuned for a
             // human-height view and would slice through the drone frame right in front of us.
-            _droneCam.nearClipPlane = 0.03f;
+            // It has to clear the closest thing we deliberately want on screen - the front prop
+            // tips, which sweep to within ~0.06m of the lens - so keep it well under that.
+            _droneCam.nearClipPlane = 0.01f;
             _droneCam.fieldOfView = DroneState.CameraFov;
 
             // Note on seeing the pilot: the local player has no third-person body to render.
@@ -76,11 +78,15 @@ namespace HTFDrone.Drone
 
             // Offset in the drone's own axes, but applied as real metres in world space so the
             // payload prefab's root scale can't shrink it.
-            Vector3 nose = transform.position
+            Vector3 mount = transform.position
                 + transform.forward * DroneState.CameraForwardMargin
                 + transform.up * DroneState.CameraHeightOffset;
 
-            _droneCam.transform.SetPositionAndRotation(nose, transform.rotation);
+            // Uptilt is applied around the drone's own right axis, so it stays a fixed angle on
+            // the airframe through rolls and flips rather than drifting toward world-up.
+            Quaternion tilt = Quaternion.AngleAxis(-DroneState.CameraUpTilt, transform.right);
+
+            _droneCam.transform.SetPositionAndRotation(mount, tilt * transform.rotation);
         }
 
         private void OnGUI()
