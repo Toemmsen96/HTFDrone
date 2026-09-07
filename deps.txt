@@ -19,6 +19,9 @@ UnityEngine.UI.dll
 UnityEngine.AnimationModule.dll
 UnityEngine.AudioModule.dll
 UnityEngine.ParticleSystemModule.dll
+# Needed because the Unity modules above target netstandard 2.1, which the net48 reference
+# assemblies don't ship - without it the build fails with CS1705 on UnityEngine.AudioModule.
+netstandard.dll
 
 # BepInEx runtime (from the game's BepInEx install, see path.txt):
 #   $STEAM_LIBRARY/steamapps/common/How to Fish/How to Fish/BepInEx/core/

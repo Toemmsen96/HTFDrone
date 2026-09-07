@@ -30,16 +30,29 @@ namespace HTFDrone.Drone
         {
             _playerCam = _pilot.Camera ? _pilot.Camera.Cam : null;
 
+            // Deliberately NOT parented to the drone. Item prefabs carry their own (often small,
+            // often non-uniform) root scale, which would both shrink the mount offset and squash
+            // the camera - that's what left the view sitting inside/behind the frame instead of
+            // out at the nose. Keeping it unparented at scale 1 and driving it from the drone's
+            // world pose each frame makes the mount offset mean real metres.
             GameObject camObj = new GameObject("DroneFpvCamera");
-            camObj.transform.SetParent(transform, worldPositionStays: false);
-            camObj.transform.localPosition = Vector3.zero;
-            camObj.transform.localRotation = Quaternion.identity;
+            camObj.transform.localScale = Vector3.one;
 
             _droneCam = camObj.AddComponent<Camera>();
             if ((bool)_playerCam)
             {
                 _droneCam.CopyFrom(_playerCam);
             }
+            // CopyFrom brings the player camera's near plane with it, which is tuned for a
+            // human-height view and would slice through the drone frame right in front of us.
+            _droneCam.nearClipPlane = 0.03f;
+            _droneCam.fieldOfView = DroneState.CameraFov;
+
+            // Note on seeing the pilot: the local player has no third-person body to render.
+            // Player.InitializePlayer *destroys* every object in _otherObjects for the local
+            // client (keeping only the first-person _localObjects, i.e. the hands), so this isn't
+            // a culling mask we can re-enable - the model genuinely doesn't exist. Showing the
+            // pilot needs a stand-in built for the purpose; see PilotStandIn.
             _droneCam.enabled = true;
 
             _pilot.SetCurCam(_droneCam);
@@ -47,6 +60,27 @@ namespace HTFDrone.Drone
             {
                 _playerCam.enabled = false;
             }
+        }
+
+        /// <summary>
+        /// Pin the lens to the drone's nose in world space. Runs in LateUpdate so it lands after
+        /// physics and any other transform writes for the frame - doing it earlier would leave
+        /// the view a frame behind the craft, which reads as floating/lagging.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (!_droneCam)
+            {
+                return;
+            }
+
+            // Offset in the drone's own axes, but applied as real metres in world space so the
+            // payload prefab's root scale can't shrink it.
+            Vector3 nose = transform.position
+                + transform.forward * DroneState.CameraForwardMargin
+                + transform.up * DroneState.CameraHeightOffset;
+
+            _droneCam.transform.SetPositionAndRotation(nose, transform.rotation);
         }
 
         private void OnGUI()

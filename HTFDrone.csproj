@@ -13,6 +13,9 @@
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
     <RootNamespace>HTFDrone</RootNamespace>
+    <!-- Where the built plugin is copied after each build (see the DeployToGame target). Mirrors
+         path.txt; override with -p:PluginDir=... if the game lives elsewhere. -->
+    <PluginDir Condition="'$(PluginDir)' == ''">$(HOME)/.local/share/Steam/steamapps/common/How to Fish/How to Fish/BepInEx/plugins</PluginDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -89,5 +92,20 @@
       <HintPath>Dependencies/Unity.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- The game's Unity modules (AudioModule in particular) are built against netstandard 2.1,
+         which the net48 reference assemblies don't provide. Reference the game's own copy so the
+         compiler can resolve it instead of erroring with CS1705. -->
+    <Reference Include="netstandard">
+      <HintPath>Dependencies/netstandard.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
+
+  <!-- Copy the built plugin straight into the game. Deploying by hand meant it was easy to test
+       a stale DLL and chase bugs that were already fixed. Path comes from path.txt; the build
+       still succeeds if the game isn't installed at that location. -->
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(PluginDir)')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginDir)" ContinueOnError="true" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) -> $(PluginDir)" />
+  </Target>
 </Project>

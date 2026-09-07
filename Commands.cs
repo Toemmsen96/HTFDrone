@@ -10,7 +10,12 @@ namespace HTFDrone.Commands
             new StartDrone(),
             new DroneDiag(),
             new DroneAxis(),
-            new DroneStick()
+            new DroneStick(),
+            new DroneCam(),
+            new DroneModelToggle(),
+            new ToggleInfiniteFlight(),
+            new ToggleExplodeOnImpact(),
+            new ToggleRemoteDrones()
         };
     }
 }
