@@ -1,0 +1,32 @@
+# Dependencies/*.dll are NOT committed to git (see .gitignore) - this file is the manifest of
+# what needs to be present in Dependencies/ before the project will build, and where each file
+# comes from. Restore them with `./fetch-deps.sh`, or copy them by hand per the notes below.
+#
+# Game managed assemblies (from the "How to Fish" install):
+#   $STEAM_LIBRARY/steamapps/common/How to Fish/How to Fish/How to Fish_Data/Managed/
+Assembly-CSharp.dll
+FishNet.Runtime.dll
+com.rlabrecque.steamworks.net.dll
+Unity.TextMeshPro.dll
+Unity.InputSystem.dll
+UnityEngine.dll
+UnityEngine.CoreModule.dll
+UnityEngine.IMGUIModule.dll
+UnityEngine.TextRenderingModule.dll
+UnityEngine.PhysicsModule.dll
+UnityEngine.InputLegacyModule.dll
+UnityEngine.UI.dll
+UnityEngine.AnimationModule.dll
+UnityEngine.AudioModule.dll
+UnityEngine.ParticleSystemModule.dll
+
+# BepInEx runtime (from the game's BepInEx install, see path.txt):
+#   $STEAM_LIBRARY/steamapps/common/How to Fish/How to Fish/BepInEx/core/
+0Harmony.dll
+BepInEx.dll
+BepInEx.Harmony.dll
+BepInEx.Preloader.dll
+
+# CTDynamicModMenu plugin API (built from source, not shipped with the game):
+#   ../CTDynamicModMenu  ->  dotnet build  ->  bin/Debug/net48/CTDynamicModMenu.dll
+CTDynamicModMenu.dll

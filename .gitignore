@@ -1,0 +1,9 @@
+# Ignore the bin and obj folders, which contain compiled files and should not be committed to version control
+[Bb]in
+[Oo]bj
+
+# Third-party/game DLLs - not ours to redistribute. See deps.txt for the manifest and
+# ../BepInEx-Build-N-Copy/copy_dependencies.sh . to (re)populate this folder locally.
+Dependencies/
+
+path.txt
