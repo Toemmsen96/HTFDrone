@@ -89,9 +89,37 @@ namespace HTFDrone
 
         [HarmonyPatch(typeof(ItemPurchasable), nameof(ItemPurchasable.Hover))]
         [HarmonyPostfix]
-        private static void MarkDroneStandHoverEnd()
+        private static void MarkDroneStandHoverEnd(ItemPurchasable __instance)
         {
+            // ItemPurchasable.Hover rebuilds _customCost from the payload item's own Cost on
+            // every single hover frame, which silently undid the drone price set when the stand
+            // was cloned - the stand looked right but charged (and gated affordability on) the
+            // price of a stick of TNT. Reapply it after the game has had its say.
+            if (DroneShop.IsHoveringDroneStand)
+            {
+                DroneShop.ApplyDronePrice(__instance);
+            }
             DroneShop.IsHoveringDroneStand = false;
+        }
+
+        // The label is hidden from UnHover, outside the Hover window the flag above covers. The
+        // hide is matched against the *displayed* string, so the rewrite has to apply here too or
+        // the game asks to hide "TNT" while the label reads "Drone" and it never goes away.
+        // Patched on Purchasable, not ItemPurchasable: UnHover is declared on the base and the
+        // subclass doesn't override it, so naming the subclass would fail to resolve and take
+        // every other patch in this class down with it at PatchAll time.
+        [HarmonyPatch(typeof(Purchasable), nameof(Purchasable.UnHover))]
+        [HarmonyPrefix]
+        private static void MarkDroneStandUnhoverStart(Purchasable __instance)
+        {
+            DroneShop.IsUnhoveringDroneStand = __instance.name == "DronePurchasable";
+        }
+
+        [HarmonyPatch(typeof(Purchasable), nameof(Purchasable.UnHover))]
+        [HarmonyPostfix]
+        private static void MarkDroneStandUnhoverEnd()
+        {
+            DroneShop.IsUnhoveringDroneStand = false;
         }
 
         [HarmonyPatch(typeof(PlayerUI), nameof(PlayerUI.SetLookAtText))]
@@ -104,6 +132,16 @@ namespace HTFDrone
         [HarmonyPatch(typeof(PlayerUI), nameof(PlayerUI.UpdateLookAtText))]
         [HarmonyPrefix]
         private static void RenameDroneStandUpdateText(ref string text)
+        {
+            text = DroneShop.RewriteHoverText(text);
+        }
+
+        // The hide path matters as much as the show path: ItemUI.HideLookAtText only hides the
+        // label when the string it's given matches the one currently displayed, so this has to
+        // receive the same rewrite the label was shown with.
+        [HarmonyPatch(typeof(PlayerUI), nameof(PlayerUI.HideLookAtText))]
+        [HarmonyPrefix]
+        private static void RenameDroneStandHideText(ref string text)
         {
             text = DroneShop.RewriteHoverText(text);
         }

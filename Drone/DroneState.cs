@@ -75,7 +75,14 @@ namespace HTFDrone.Drone
 
         // Uptilt, degrees. Real FPV cams are angled up so the horizon sits low when the quad
         // pitches forward to fly fast; it also drops the prop line into the top of the frame.
-        public static float CameraUpTilt = 20f;
+        // 30 is a typical racing-quad angle - enough that the horizon stays in view at speed.
+        // Set from the mod menu ("Drone Camera Uptilt") or with /dronetilt <degrees>.
+        public static float CameraUpTilt = 30f;
+
+        // Clamp range for the above. Past vertical the "uptilt" would flip the view over, and
+        // negative angles are downtilt, which no FPV quad is mounted for.
+        public const float MinCameraUpTilt = 0f;
+        public const float MaxCameraUpTilt = 90f;
 
         // FPV cams run wide - this is what gives that fisheye, everything-rushing-past feel.
         public static float CameraFov = 105f;

@@ -44,22 +44,25 @@ namespace HTFDrone.Drone
             return designPixels * Scale;
         }
 
-        public static void Draw(Rigidbody droneRig, Transform droneTransform)
+        public static void Draw(Rigidbody droneRig, Transform droneTransform, Camera droneCam)
         {
             EnsureStyles();
 
             float speed = droneRig ? droneRig.linearVelocity.magnitude : 0f;
             float altitude = droneTransform.position.y - WaterManager.WaterHeight;
-            Vector3 euler = droneTransform.eulerAngles;
-            float pitchDeg = Mathf.DeltaAngle(0f, euler.x) * -1f; // nose up = positive pitch, OSD convention
-            float rollDeg = Mathf.DeltaAngle(0f, euler.z);
 
             UpdateFakeBattery(speed);
 
-            // The lens is angled up by CameraUpTilt, so the real horizon in the video sits that
-            // much lower in frame than the drone's own pitch implies. Subtract it, or the drawn
-            // horizon floats above the one you can see.
-            DrawArtificialHorizon(pitchDeg - DroneState.CameraUpTilt, rollDeg);
+            // Derived from the camera's own basis rather than the drone's euler angles. Euler
+            // angles decompose in a fixed order, so past 90 degrees of pitch the roll term jumps
+            // by 180 and the horizon snaps upside-down while the craft is still rotating
+            // smoothly - and this is an acro quad that flips and flies inverted on purpose. The
+            // camera basis also folds in the uptilt for free: the lens is what sees the horizon,
+            // so its orientation is what the drawn horizon has to agree with.
+            Transform lens = droneCam ? droneCam.transform : droneTransform;
+            GetHorizon(lens, out float pitchDeg, out float rollDeg);
+
+            DrawArtificialHorizon(pitchDeg, rollDeg, droneCam);
             DrawCrosshair();
             DrawHomeArrowAndDistance(droneTransform);
             DrawTopLeftLinkStats();
@@ -288,23 +291,87 @@ namespace HTFDrone.Drone
         }
 
         /// <summary>
+        /// Elevation and bank of the true horizon as seen through <paramref name="lens"/>.
+        ///
+        /// Pitch is the angle between the view axis and the world horizontal plane, taken from
+        /// the forward vector's own Y component - a single continuous value with no decomposition
+        /// order to break at the poles. Roll is measured by projecting world-up into the lens's
+        /// image plane and reading the angle it makes with screen-up, which is precisely what
+        /// "which way is down in this picture" means. Both stay well-defined through loops and
+        /// inverted flight; the only degenerate case is looking straight up or down, where the
+        /// horizon has left the frame entirely and the roll term stops mattering.
+        /// </summary>
+        private static void GetHorizon(Transform lens, out float pitchDeg, out float rollDeg)
+        {
+            Vector3 forward = lens.forward;
+
+            // Nose up = positive, matching OSD convention (horizon slides down the screen).
+            pitchDeg = Mathf.Asin(Mathf.Clamp(forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+
+            // World-up with the view-axis component removed is world-up as it appears in the
+            // image plane; the angle from screen-up to that is the bank.
+            Vector3 upInPlane = Vector3.up - forward * Vector3.Dot(Vector3.up, forward);
+            if (upInPlane.sqrMagnitude < 1e-8f)
+            {
+                // Straight up or down - the horizon isn't in frame, so hold the bank at level
+                // rather than letting a near-zero vector spin the line randomly.
+                rollDeg = 0f;
+                return;
+            }
+
+            // This is already the on-screen angle of the horizon line, in the sense
+            // GUIUtility.RotateAroundPivot uses - verified against the true horizon projected
+            // through the camera, not reasoned about: bank right and this goes negative, which is
+            // exactly the anticlockwise tilt the image shows.
+            rollDeg = Mathf.Atan2(
+                Vector3.Dot(upInPlane, lens.right),
+                Vector3.Dot(upInPlane, lens.up)) * Mathf.Rad2Deg;
+        }
+
+        /// <summary>
         /// Betaflight's artificial horizon: a single horizon line that rolls with bank and slides
         /// with pitch, drawn as a row of short dashes either side of centre. No numbered pitch
         /// ladder - Betaflight doesn't have one; the horizon line itself plus the fixed crosshair
         /// is the whole instrument, which is why it stays readable on a noisy analog feed.
         /// </summary>
-        private static void DrawArtificialHorizon(float pitchDeg, float rollDeg)
+        private static void DrawArtificialHorizon(float pitchDeg, float rollDeg, Camera droneCam)
         {
             float cx = Screen.width * 0.5f;
             float cy = Screen.height * 0.5f;
-            float pixelsPerDegree = S(10f);
 
-            // Clamp how far the horizon slides so it stays on screen when pointing straight up or
-            // down, the way the real OSD pins it at the edge of its window.
-            float pitchOffset = Mathf.Clamp(pitchDeg * pixelsPerDegree, -S(320f), S(320f));
+            // Scale from the camera's actual projection rather than a fixed constant, so the
+            // drawn line tracks the real horizon in the image instead of drifting away from it.
+            // Unity's fieldOfView is vertical, so half the screen height spans half of it.
+            float halfFovRad = (droneCam ? droneCam.fieldOfView : DroneState.CameraFov) * 0.5f * Mathf.Deg2Rad;
+            float focalPixels = (Screen.height * 0.5f) / Mathf.Tan(halfFovRad);
+
+            // Perspective, not a linear degrees-to-pixels ratio: at a 105 degree FOV the small
+            // angle approximation is badly wrong toward the edges of frame.
+            float pitchOffset = focalPixels * Mathf.Tan(Mathf.Clamp(pitchDeg, -85f, 85f) * Mathf.Deg2Rad);
+
+            // Under bank the line is drawn rotated about its own midpoint, so that midpoint has
+            // to sit further from centre than the perpendicular distance - by exactly 1/cos(roll)
+            // - or the line lands short and appears to slide as you roll. Clamped away from
+            // vertical bank, where that factor runs away (the horizon is near-vertical on screen
+            // there and its "height" stops being meaningful).
+            float rollCos = Mathf.Cos(Mathf.Clamp(rollDeg, -80f, 80f) * Mathf.Deg2Rad);
+            pitchOffset /= Mathf.Max(0.17f, Mathf.Abs(rollCos));
+
+            // Clamped just past the screen edge so the line runs off frame the way the real
+            // horizon does and pins there rather than shooting to infinity as pitch approaches
+            // vertical. (A tighter clamp freezes it in plain view, which reads as a frozen
+            // instrument rather than a steep climb.)
+            float limit = Screen.height * 0.6f;
+            pitchOffset = Mathf.Clamp(pitchOffset, -limit, limit);
+
+            // Pivot on the horizon line itself, not on screen centre. Rotating about centre while
+            // the line sits away from it swings the whole bar sideways in an arc instead of
+            // banking it in place - so at any pitch other than level, rolling used to translate
+            // the horizon across the screen rather than tilt it.
+            float lineY = cy + pitchOffset;
 
             Matrix4x4 prevMatrix = GUI.matrix;
-            GUIUtility.RotateAroundPivot(rollDeg, new Vector2(cx, cy));
+            GUIUtility.RotateAroundPivot(rollDeg, new Vector2(cx, lineY));
 
             GUI.color = OsdColor;
 
@@ -317,7 +384,7 @@ namespace HTFDrone.Drone
             for (int i = 0; i < 4; i++)
             {
                 float offset = gap + i * spacing;
-                float y = cy + pitchOffset - dashHeight * 0.5f;
+                float y = lineY - dashHeight * 0.5f;
                 GUI.DrawTexture(new Rect(cx - offset - dashWidth, y, dashWidth, dashHeight), _barTexture);
                 GUI.DrawTexture(new Rect(cx + offset, y, dashWidth, dashHeight), _barTexture);
             }

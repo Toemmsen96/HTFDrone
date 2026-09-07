@@ -9,9 +9,11 @@ namespace HTFDrone.Commands
         {
             new StartDrone(),
             new DroneDiag(),
+            new DroneStandDiag(),
             new DroneAxis(),
             new DroneStick(),
             new DroneCam(),
+            new DroneTilt(),
             new DroneModelToggle(),
             new ToggleInfiniteFlight(),
             new ToggleExplodeOnImpact(),

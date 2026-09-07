@@ -85,13 +85,31 @@ namespace HTFDrone.Drone
         public static bool IsHoveringDroneStand;
 
         /// <summary>
+        /// Set while a drone stand is hiding its label from UnHover. Separate from the hover flag
+        /// because UnHover runs outside the Hover call, but the rewrite has to apply to both -
+        /// see RewriteHoverText.
+        /// </summary>
+        public static bool IsUnhoveringDroneStand;
+
+        /// <summary>
         /// Swaps the payload item's name out of a drone stand's hover text. The stand points at
         /// the shared prefab rather than a tagged instance, so the Item.GetName patch can't cover
         /// it - the text has to be fixed up on its way to the UI instead.
         /// </summary>
         public static string RewriteHoverText(string text)
         {
-            if (!IsHoveringDroneStand || string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+
+            // The window this runs in has to cover the hide as well as the show. The flag is set
+            // inside ItemPurchasable.Hover, but PlayerUI.HideLookAtText is called from UnHover,
+            // outside it - so the hide used to be handed the original "TNT" string while the
+            // label on screen said "Drone". HideLookAtText only hides when the two match exactly,
+            // so the label was never hidden: it stayed up after looking away, and every fresh
+            // hover stacked another scale tween on it until the price ballooned off the screen.
+            if (!IsHoveringDroneStand && !IsUnhoveringDroneStand)
             {
                 return text;
             }
@@ -109,6 +127,19 @@ namespace HTFDrone.Drone
             }
 
             return text.Replace(payloadName, DroneState.DroneItemName);
+        }
+
+        /// <summary>
+        /// Forces the drone price onto a stand. ItemPurchasable.Hover recomputes _customCost from
+        /// the payload item's Cost every hover frame, so setting it once at clone time isn't
+        /// enough - without this the stand quietly charges the payload's price instead.
+        /// </summary>
+        public static void ApplyDronePrice(ItemPurchasable stand)
+        {
+            if ((bool)stand)
+            {
+                CustomCostField?.SetValue(stand, DroneState.DronePrice);
+            }
         }
 
         /// <summary>Called when a drone stand is interacted with, just before the server spawns the item.</summary>

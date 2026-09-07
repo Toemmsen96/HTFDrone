@@ -95,7 +95,7 @@ namespace HTFDrone.Drone
             {
                 return;
             }
-            DroneOsd.Draw(_droneRig, transform);
+            DroneOsd.Draw(_droneRig, transform, _droneCam);
         }
 
         private void RestorePlayerCamera()
