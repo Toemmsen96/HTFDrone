@@ -87,6 +87,14 @@ namespace HTFDrone.Drone
             Quaternion tilt = Quaternion.AngleAxis(-DroneState.CameraUpTilt, transform.right);
 
             _droneCam.transform.SetPositionAndRotation(mount, tilt * transform.rotation);
+
+            // FOV is otherwise only stamped once at camera setup, so a menu slider dragged
+            // mid-flight would do nothing until the next launch. Re-stamping it here is free
+            // (Unity no-ops an identical assignment) and makes the slider read as live.
+            if (!Mathf.Approximately(_droneCam.fieldOfView, DroneState.CameraFov))
+            {
+                _droneCam.fieldOfView = DroneState.CameraFov;
+            }
         }
 
         private void OnGUI()

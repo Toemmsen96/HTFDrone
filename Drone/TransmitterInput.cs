@@ -33,13 +33,34 @@ namespace HTFDrone.Drone
         {
             if (TryGetGamepad(out Gamepad gamepad))
             {
-                return ReadFromGamepad(gamepad);
+                return ApplyRates(ReadFromGamepad(gamepad));
             }
             if (TryGetAxes(out IReadOnlyList<AxisControl> axes))
             {
-                return ReadFromAxes(axes);
+                return ApplyRates(ReadFromAxes(axes));
             }
             return default;
+        }
+
+        /// <summary>
+        /// Per-axis sensitivity and inversion, applied once here rather than in each read path so
+        /// gamepad-mode and raw-joystick-mode transmitters fly identically.
+        ///
+        /// Deliberately after the deadzone (which the read paths apply) and after HasInput has
+        /// been decided: scaling first would let a low sensitivity pull a real stick movement
+        /// under the deadzone threshold and swallow it, and a zeroed sensitivity would read as
+        /// "no transmitter input" and hand control back to the fallback path mid-flight.
+        ///
+        /// Values are not clamped to 1 - overdriving an axis past stock rate is a legitimate
+        /// setup, and the sliders' own ranges decide what is reachable from the menu.
+        /// </summary>
+        private static Sticks ApplyRates(Sticks sticks)
+        {
+            sticks.Pitch *= DroneState.PitchSensitivity * (DroneState.InvertPitch ? -1f : 1f);
+            sticks.Roll *= DroneState.RollSensitivity * (DroneState.InvertRoll ? -1f : 1f);
+            sticks.Yaw *= DroneState.YawSensitivity * (DroneState.InvertYaw ? -1f : 1f);
+            sticks.Throttle *= DroneState.ThrottleSensitivity * (DroneState.InvertThrottle ? -1f : 1f);
+            return sticks;
         }
 
         public static bool DetonatePressed()

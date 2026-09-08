@@ -119,6 +119,24 @@ namespace HTFDrone.Drone
 
         public static float StickDeadzone = 0.08f;
 
+        // Per-axis sensitivity multipliers on top of MaxRateDegreesPerSecond (pitch/roll/yaw)
+        // and on the throttle stick. 1 is stock. Real transmitters do this in the radio with
+        // per-model rates and expo; doing it here means one build flies to taste without
+        // reflashing anything. Pitch/roll/yaw scale the rotation rate; throttle scales stick
+        // travel before the hover curve, so lowering it makes the whole throttle range finer
+        // rather than capping climb.
+        public static float PitchSensitivity = 1f;
+        public static float RollSensitivity = 1f;
+        public static float YawSensitivity = 1f;
+        public static float ThrottleSensitivity = 1f;
+
+        // Inversion per axis - transmitters differ on which way is "up", and a reversed channel
+        // is otherwise only fixable in the radio.
+        public static bool InvertPitch;
+        public static bool InvertRoll;
+        public static bool InvertYaw;
+        public static bool InvertThrottle;
+
         // Arm channel (e.g. QX7's SA/SF switch mapped to a gamepad button/trigger) - detonates
         // the drone in flight on the spot. Bound to a keyboard key by default too so it's usable
         // without a transmitter plugged in.

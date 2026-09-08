@@ -66,6 +66,9 @@ see which index responds, then use `/droneaxis <roll\|pitch\|throttle\|yaw> <ind
 HID joystick's raw axes, or `/dronestick` to swap which stick is throttle/yaw vs. pitch/roll for
 gamepad-mode transmitters.
 
+Rates, expo-style sensitivity and channel reversal are set in the mod menu rather than on the
+radio, so one transmitter setup flies every way you want it to — see [Tuning](#tuning) below.
+
 While piloting, your view switches to a nose-mounted FPV camera and your own inputs are frozen
 (same mechanism the game uses for pausing or dying) until the drone is destroyed or the flight
 timer runs out, at which point control returns to your own body.
@@ -77,12 +80,53 @@ from the camera's actual view direction (not Euler angles, so it stays correct t
 inverted flight), a fixed centre crosshair, altitude, speed, a battery/mAh readout, link stats,
 and a home arrow pointing back at the launch point.
 
+## Tuning
+
+Everything worth adjusting is a slider in the mod menu's "Drone" category — no config-file
+editing, and no relaunch. Every value below is read live, so dragging a slider retunes a drone
+that is already in the air.
+
+**Drone Flight Model** (`/droneflight`)
+
+| Slider | Range | Default | What it does |
+|---|---|---|---|
+| Max Thrust | 5–80 | 28 | Full-throttle thrust, in units of gravity |
+| Hover Throttle | 0.1–0.9 | 0.55 | Stick position that exactly cancels gravity |
+| Max Rate | 60–1200 | 360 | Degrees/sec at full stick deflection |
+| Linear Drag | 0–3 | 0.6 | Air resistance — 0 coasts forever |
+| Flight Time | 5–300 | 20 | Seconds before self-destruct (ignored with `/droneinfinite`) |
+
+**Drone Camera** (`/dronecamsettings`)
+
+| Slider | Range | Default | What it does |
+|---|---|---|---|
+| Forward Offset | −0.5–0.5 m | 0.14 | How far forward of frame centre the lens sits |
+| Height Offset | −0.2–0.4 m | 0.035 | How far above frame centre the lens sits |
+| Field of View | 50–150° | 105 | Lens FOV — wider is more fisheye |
+
+Uptilt has its own entry ("Drone Camera Uptilt", `/dronetilt`) with a 0–90° slider, kept separate
+so exactly one place owns that value.
+
+**Drone Input** (`/droneinput`)
+
+| Slider | Range | Default | What it does |
+|---|---|---|---|
+| Stick Deadzone | 0–0.5 | 0.08 | Stick travel ignored around centre |
+| Pitch/Roll/Yaw/Throttle Sensitivity | 0–3 | 1 | Per-axis multiplier on stick travel (1 = stock) |
+| Invert Pitch/Roll/Yaw/Throttle | 0 or 1 | 0 | Reverses that channel |
+| Roll/Pitch/Throttle/Yaw Axis | 0–15 | 3/2/1/0 | HID axis index (raw joystick mode only) |
+
+Sensitivity is applied in one place for both input paths, so a gamepad-mode and a raw-HID
+transmitter fly identically. It is applied *after* the deadzone — scaling first would let a low
+sensitivity pull a genuine stick movement below the deadzone and swallow it entirely.
+
 ## Commands
 
-All commands also appear as buttons/toggles in the CTDynamicModMenu UI (default key **F4**), under
-its own "Drone" category:
+All commands also appear in the CTDynamicModMenu UI (default key **F4**) under its own "Drone"
+category, as buttons, toggles, or — for the tuning commands — an arrow that expands into the
+sliders described above:
 
-![The Drone category in the mod menu](.ghimages/mod-menu.png)
+![The Drone category in the mod menu](.ghimages/mod-menu-new.png)
 
 | Command | Description |
 |---|---|
@@ -92,6 +136,9 @@ its own "Drone" category:
 | `/dronestick` | Swap which physical stick is throttle+yaw vs. pitch+roll |
 | `/dronecam <forward> [height]` | Set the FPV camera's mount position on the frame |
 | `/dronetilt <degrees>` | Set the FPV camera's uptilt (0–90°, default 30°) |
+| `/droneflight` | Report the flight model values; carries the thrust/rate/drag/flight-time sliders |
+| `/dronecamsettings` | Report the camera mount and FOV; carries their sliders |
+| `/droneinput` | Report deadzone, sensitivity and axis mapping; carries their sliders |
 | `/dronemodel` | Toggle whether you see your own drone's airframe in FPV |
 | `/droneinfinite` | Toggle infinite flight time (ignores the flight timer) |
 | `/droneimpact` | Toggle whether hitting something detonates the drone |

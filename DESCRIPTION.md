@@ -12,10 +12,22 @@ No custom drone model is loaded in - the "drone" [i]is[/i] the game's own explos
 [*]Real acro/rate flight physics - mass, gravity, drag, no auto-level, can flip and fly inverted like a real quad
 [*]Betaflight/INAV-style OSD: artificial horizon, altitude, speed, battery, home arrow
 [*]Buy a drone from a shop stand on every island, or convert a held explosive with one keypress
-[*]Full mod menu integration (CTDynamicModMenu) - every setting is a button or toggle, no config file editing
+[*]Full mod menu integration (CTDynamicModMenu) - every setting is a slider, button or toggle, no config file editing
+[*]Per-axis stick sensitivity, deadzone and channel reversal - set your rates in the menu instead of on the radio
+[*]Tune thrust, hover point, rotation rate, drag, flight time, camera mount, uptilt and FOV with sliders - live, mid-flight
 [*]Other modded players see your drone as a drone, not as TNT
-[*]Tunable camera mount, uptilt, FOV, flight time, and more
 [/list]
+
+[size=4]Tuning[/size]
+[center][img]https://raw.githubusercontent.com/Toemmsen96/HTFDrone/master/.ghimages/mod-menu-new.png[/img][/center]
+
+Open the mod menu ([b]F4[/b]) and expand anything in the [b]Drone[/b] category - every value is a slider, and every one of them applies immediately to a drone that is already in the air. No relaunch, no config file.
+[list]
+[*][b]Flight model[/b] - max thrust, hover throttle point, rotation rate, drag, flight time
+[*][b]Camera[/b] - forward and height mount offset, field of view, uptilt
+[*][b]Input[/b] - stick deadzone, per-axis sensitivity, per-axis inversion, raw HID axis mapping
+[/list]
+Settings persist between sessions.
 
 [size=4]Requirements[/size]
 [list]
@@ -33,5 +45,7 @@ Extract into your [b]BepInEx/plugins[/b] folder, alongside CTDynamicModMenu.
 [*]Throw it to launch, or use [b]/fpvdrone[/b] to launch immediately
 [*]Fly with your gamepad/transmitter sticks - open the mod menu ([b]F4[/b]) for every other setting
 [/list]
+
+[i]Tip: the on-screen keybind text and the keybind labels on menu buttons can each be toggled off in the mod menu's Settings tab, if you'd rather have a cleaner HUD.[/i]
 
 Full command list, control mapping, and technical details are on the [url=https://github.com/Toemmsen96/HTFDrone]GitHub page[/url].

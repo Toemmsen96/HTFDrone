@@ -13,7 +13,7 @@ namespace HTFDrone
     {
         private const string modGUID = "toemmsen.HTFDrone";
         private const string modName = "HTFDrone";
-        private const string modVersion = "1.0.0";
+        private const string modVersion = "1.1.0";
         private readonly Harmony harmony = new Harmony(modGUID);
         internal static ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource(modGUID);
         private static Plugin instance;

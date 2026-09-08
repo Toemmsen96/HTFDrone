@@ -151,8 +151,13 @@ namespace HTFDrone.Drone
                 {
                     continue;
                 }
-                // Alternate direction per motor, like a real quad's counter-rotating pairs.
-                float dir = (i % 2 == 0) ? 1f : -1f;
+                // Real quads counter-rotate on the *diagonals*: front-left and rear-right turn
+                // one way, front-right and rear-left the other, so the four motors' torques
+                // cancel out. Deriving that from the prop's own corner rather than its array
+                // index keeps it correct no matter what order BuildFrame emitted them in - an
+                // index-parity rule silently degenerates into a front/rear split instead.
+                Vector3 corner = props[i].localPosition;
+                float dir = (corner.x >= 0f) == (corner.z >= 0f) ? 1f : -1f;
                 props[i].localRotation = Quaternion.Euler(0f, spin * dir, 0f);
             }
         }

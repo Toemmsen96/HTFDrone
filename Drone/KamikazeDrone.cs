@@ -113,6 +113,13 @@ namespace HTFDrone.Drone
             // them off every tick rather than trying to win a timing race.
             HideRenderers();
 
+            // Same reasoning as the camera FOV: drag is applied once at spawn, so re-stamp it
+            // each tick or a drag slider moved in flight would sit dead until the next launch.
+            if (!Mathf.Approximately(_rig.linearDamping, DroneState.LinearDrag))
+            {
+                _rig.linearDamping = DroneState.LinearDrag;
+            }
+
             _timeAlive += Time.fixedDeltaTime;
             if (!DroneState.InfiniteFlight && _timeAlive >= DroneState.MaxFlightTime)
             {
